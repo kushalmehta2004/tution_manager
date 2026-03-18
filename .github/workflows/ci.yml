@@ -19,7 +19,13 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm install
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate --workspace @tuition-manager/api
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tuition_manager_ci
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tuition_manager_ci
 
       - name: Lint
         run: npm run lint
