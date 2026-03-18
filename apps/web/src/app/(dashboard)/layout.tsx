@@ -1,5 +1,9 @@
+'use client';
+
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, type ReactNode } from 'react';
+import { useAuth } from '../../lib/auth-context';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
@@ -12,17 +16,41 @@ const navLinks = [
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <p className="text-slate-600">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Redirect in progress
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <header className="border-b border-slate-200 bg-white md:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <p className="text-sm font-semibold">Tuition Manager</p>
-          <Link
-            href="/dashboard"
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700"
+          <button
+            onClick={() => {
+              logout();
+              router.push('/login');
+            }}
+            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
           >
-            Home
-          </Link>
+            Logout
+          </button>
         </div>
         <nav className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 pb-3">
           {navLinks.slice(0, 3).map((link) => (
@@ -59,11 +87,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500">Welcome back</p>
-                <h1 className="text-lg font-semibold">Teacher Workspace</h1>
+                <h1 className="text-lg font-semibold">{user?.name || 'Teacher'}</h1>
               </div>
-              <div className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
-                Phase 2
-              </div>
+              <button
+                onClick={() => {
+                  logout();
+                  router.push('/login');
+                }}
+                className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
+              >
+                Logout
+              </button>
             </div>
           </header>
 

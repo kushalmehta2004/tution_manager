@@ -22,5 +22,10 @@ export async function listFeeStructuresHandler(req: Request, res: Response): Pro
   }
 
   const rows = await listFeeStructures(teacherId);
-  res.status(200).json({ data: rows });
+  res.status(200).json({
+    data: rows.map((row) => ({
+      ...row,
+      amount: Number(row.amount),
+    })),
+  });
 }

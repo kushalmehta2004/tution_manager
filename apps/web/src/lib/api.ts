@@ -1,3 +1,8 @@
+export type LoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 export type FeeStructureSummary = {
   id: string;
   name: string;
@@ -156,6 +161,33 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+export function clearToken(): void {
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem('tm_access_token');
+  }
+}
+
+export async function loginTeacher(email: string, password: string): Promise<LoginResponse> {
+  const response = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    throw new Error(body.message ?? 'Login failed');
+  }
+
+  const data = (await response.json()) as LoginResponse;
+  
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem('tm_access_token', data.accessToken);
+  }
+  
+  return data;
 }
 
 export async function fetchStudents(params?: { status?: string }) {
