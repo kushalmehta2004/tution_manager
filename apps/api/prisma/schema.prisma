@@ -1,0 +1,396 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum SubscriptionPlan {
+  free
+  starter
+  pro
+}
+
+enum StaffRole {
+  faculty
+  admin
+  accountant
+}
+
+enum StudentStatus {
+  active
+  inactive
+  trial
+  alumni
+}
+
+enum ParentRelation {
+  father
+  mother
+  guardian
+}
+
+enum FeeFrequency {
+  monthly
+  quarterly
+  half_yearly
+  annual
+  one_time
+  per_class
+}
+
+enum StudentFeeStatus {
+  pending
+  paid
+  partial
+  waived
+  overdue
+}
+
+enum PaymentMode {
+  cash
+  upi
+  bank_transfer
+  cheque
+  razorpay
+  other
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  holiday
+  cancelled
+}
+
+model Teacher {
+  id                      String           @id @default(uuid()) @db.Uuid
+  created_at              DateTime         @default(now()) @db.Timestamptz
+  updated_at              DateTime         @updatedAt @db.Timestamptz
+  deleted_at              DateTime?        @db.Timestamptz
+  name                    String           @db.VarChar(255)
+  email                   String           @unique @db.VarChar(255)
+  phone                   String           @db.VarChar(15)
+  password_hash           String           @db.VarChar(255)
+  institute_name          String           @db.VarChar(500)
+  city                    String           @db.VarChar(100)
+  subjects_taught         String[]
+  profile_photo_url       String?
+  subscription_plan       SubscriptionPlan @default(free)
+  subscription_expires_at DateTime?        @db.Timestamptz
+  whatsapp_connected      Boolean          @default(false)
+  razorpay_account_id     String?          @db.VarChar(255)
+  timezone                String           @default("Asia/Kolkata") @db.VarChar(50)
+
+  staff          Staff[]
+  students       Student[]
+  batches        Batch[]
+  fee_structures FeeStructure[]
+  student_fees   StudentFee[]
+  fee_payments   FeePayment[]
+  tests          Test[]
+  announcements  Announcement[]
+  holidays       Holiday[]
+}
+
+model Staff {
+  id             String    @id @default(uuid()) @db.Uuid
+  created_at     DateTime  @default(now()) @db.Timestamptz
+  updated_at     DateTime  @updatedAt @db.Timestamptz
+  deleted_at     DateTime? @db.Timestamptz
+  teacher_id     String    @db.Uuid
+  name           String    @db.VarChar(255)
+  email          String?   @db.VarChar(255)
+  phone          String    @db.VarChar(15)
+  role           StaffRole
+  subjects       String[]
+  monthly_salary BigInt?
+  join_date      DateTime? @db.Date
+  is_active      Boolean   @default(true)
+
+  teacher      Teacher @relation(fields: [teacher_id], references: [id])
+  batches      Batch[]
+  announcements Announcement[]
+
+  @@index([teacher_id])
+}
+
+model Student {
+  id              String        @id @default(uuid()) @db.Uuid
+  created_at      DateTime      @default(now()) @db.Timestamptz
+  updated_at      DateTime      @updatedAt @db.Timestamptz
+  deleted_at      DateTime?     @db.Timestamptz
+  teacher_id      String        @db.Uuid
+  student_code    String        @db.VarChar(20)
+  name            String        @db.VarChar(255)
+  phone           String?       @db.VarChar(15)
+  date_of_birth   DateTime?     @db.Date
+  class_grade     String        @db.VarChar(20)
+  school_college  String?       @db.VarChar(255)
+  address         String?
+  photo_url       String?
+  document_urls   Json?
+  enrollment_date DateTime      @db.Date
+  status          StudentStatus @default(active)
+  notes           String?
+
+  teacher         Teacher         @relation(fields: [teacher_id], references: [id])
+  parent          Parent?
+  batch_students  BatchStudent[]
+  attendance      Attendance[]
+  student_fees    StudentFee[]
+  fee_payments    FeePayment[]
+  test_results    TestResult[]
+  announcements   Announcement[]
+
+  @@index([teacher_id])
+  @@unique([teacher_id, student_code])
+}
+
+model Parent {
+  id                 String    @id @default(uuid()) @db.Uuid
+  created_at         DateTime  @default(now()) @db.Timestamptz
+  updated_at         DateTime  @updatedAt @db.Timestamptz
+  deleted_at         DateTime? @db.Timestamptz
+  student_id         String    @unique @db.Uuid
+  name               String    @db.VarChar(255)
+  phone              String    @unique @db.VarChar(15)
+  email              String?   @db.VarChar(255)
+  relation           ParentRelation
+  password_hash      String    @db.VarChar(255)
+  notification_prefs Json?
+  last_login_at      DateTime? @db.Timestamptz
+
+  student Student @relation(fields: [student_id], references: [id])
+}
+
+model Batch {
+  id                  String    @id @default(uuid()) @db.Uuid
+  created_at          DateTime  @default(now()) @db.Timestamptz
+  updated_at          DateTime  @updatedAt @db.Timestamptz
+  deleted_at          DateTime? @db.Timestamptz
+  teacher_id          String    @db.Uuid
+  name                String    @db.VarChar(255)
+  subject             String    @db.VarChar(100)
+  assigned_faculty_id String?   @db.Uuid
+  days_of_week        Int[]
+  start_time          DateTime  @db.Time
+  end_time            DateTime  @db.Time
+  room                String?   @db.VarChar(100)
+  capacity            Int
+  is_active           Boolean   @default(true)
+  academic_year       String    @db.VarChar(9)
+  color_hex           String?   @db.VarChar(7)
+
+  teacher        Teacher        @relation(fields: [teacher_id], references: [id])
+  assigned_staff Staff?         @relation(fields: [assigned_faculty_id], references: [id])
+  batch_students BatchStudent[]
+  attendance     Attendance[]
+  tests          Test[]
+  announcements  Announcement[]
+  holidays       Holiday[]
+
+  @@index([teacher_id])
+  @@index([assigned_faculty_id])
+}
+
+model BatchStudent {
+  batch_id    String    @db.Uuid
+  student_id  String    @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  updated_at  DateTime  @updatedAt @db.Timestamptz
+  deleted_at  DateTime? @db.Timestamptz
+  joined_at   DateTime  @db.Date
+  left_at     DateTime? @db.Date
+  is_active   Boolean   @default(true)
+
+  batch   Batch   @relation(fields: [batch_id], references: [id])
+  student Student @relation(fields: [student_id], references: [id])
+
+  @@id([batch_id, student_id])
+}
+
+model Attendance {
+  id          String           @id @default(uuid()) @db.Uuid
+  created_at  DateTime         @default(now()) @db.Timestamptz
+  updated_at  DateTime         @updatedAt @db.Timestamptz
+  deleted_at  DateTime?        @db.Timestamptz
+  batch_id    String           @db.Uuid
+  student_id  String           @db.Uuid
+  date        DateTime         @db.Date
+  status      AttendanceStatus
+  marked_by   String           @db.Uuid
+  marked_at   DateTime         @default(now()) @db.Timestamptz
+  note        String?
+
+  batch   Batch   @relation(fields: [batch_id], references: [id])
+  student Student @relation(fields: [student_id], references: [id])
+
+  @@index([batch_id, date])
+  @@index([student_id, date])
+  @@unique([batch_id, student_id, date])
+}
+
+model FeeStructure {
+  id          String       @id @default(uuid()) @db.Uuid
+  created_at  DateTime     @default(now()) @db.Timestamptz
+  updated_at  DateTime     @updatedAt @db.Timestamptz
+  deleted_at  DateTime?    @db.Timestamptz
+  teacher_id  String       @db.Uuid
+  name        String       @db.VarChar(255)
+  amount      BigInt
+  frequency   FeeFrequency
+  subject     String?      @db.VarChar(100)
+  description String?
+  is_active   Boolean      @default(true)
+
+  teacher      Teacher      @relation(fields: [teacher_id], references: [id])
+  student_fees StudentFee[]
+
+  @@index([teacher_id])
+}
+
+model StudentFee {
+  id               String           @id @default(uuid()) @db.Uuid
+  created_at       DateTime         @default(now()) @db.Timestamptz
+  updated_at       DateTime         @updatedAt @db.Timestamptz
+  deleted_at       DateTime?        @db.Timestamptz
+  student_id       String           @db.Uuid
+  teacher_id       String           @db.Uuid
+  fee_structure_id String           @db.Uuid
+  due_date         DateTime         @db.Date
+  amount_due       BigInt
+  discount_amount  BigInt           @default(0)
+  discount_reason  String?
+  status           StudentFeeStatus @default(pending)
+  period_label     String?          @db.VarChar(50)
+  reminder_count   Int              @default(0)
+  last_reminder_at DateTime?        @db.Timestamptz
+
+  student       Student      @relation(fields: [student_id], references: [id])
+  teacher       Teacher      @relation(fields: [teacher_id], references: [id])
+  fee_structure FeeStructure @relation(fields: [fee_structure_id], references: [id])
+  fee_payments  FeePayment[]
+
+  @@index([student_id])
+  @@index([teacher_id])
+  @@index([status, due_date])
+}
+
+model FeePayment {
+  id                 String      @id @default(uuid()) @db.Uuid
+  created_at         DateTime    @default(now()) @db.Timestamptz
+  updated_at         DateTime    @updatedAt @db.Timestamptz
+  deleted_at         DateTime?   @db.Timestamptz
+  student_fee_id     String      @db.Uuid
+  student_id         String      @db.Uuid
+  teacher_id         String      @db.Uuid
+  amount_paid        BigInt
+  payment_date       DateTime    @db.Date
+  payment_mode       PaymentMode
+  reference_number   String?     @db.VarChar(100)
+  receipt_number     String?     @db.VarChar(50)
+  receipt_url        String?
+  collected_by       String?     @db.Uuid
+  razorpay_payment_id String?    @db.VarChar(100)
+  notes              String?
+
+  student_fee StudentFee @relation(fields: [student_fee_id], references: [id])
+  student     Student    @relation(fields: [student_id], references: [id])
+  teacher     Teacher    @relation(fields: [teacher_id], references: [id])
+
+  @@index([student_fee_id])
+  @@index([teacher_id, payment_date])
+}
+
+model Test {
+  id             String     @id @default(uuid()) @db.Uuid
+  created_at     DateTime   @default(now()) @db.Timestamptz
+  updated_at     DateTime   @updatedAt @db.Timestamptz
+  deleted_at     DateTime?  @db.Timestamptz
+  teacher_id     String     @db.Uuid
+  batch_id       String     @db.Uuid
+  title          String     @db.VarChar(255)
+  subject        String     @db.VarChar(100)
+  test_date      DateTime   @db.Date
+  max_marks      Int
+  passing_marks  Int
+  weightage      Decimal    @db.Decimal(5, 2)
+  topics_covered String[]
+  is_published   Boolean    @default(false)
+
+  teacher      Teacher     @relation(fields: [teacher_id], references: [id])
+  batch        Batch       @relation(fields: [batch_id], references: [id])
+  test_results TestResult[]
+
+  @@index([teacher_id])
+  @@index([batch_id])
+}
+
+model TestResult {
+  id             String    @id @default(uuid()) @db.Uuid
+  created_at     DateTime  @default(now()) @db.Timestamptz
+  updated_at     DateTime  @updatedAt @db.Timestamptz
+  deleted_at     DateTime? @db.Timestamptz
+  test_id        String    @db.Uuid
+  student_id     String    @db.Uuid
+  marks_obtained Decimal   @db.Decimal(6, 2)
+  percentage     Decimal?  @db.Decimal(5, 2)
+  grade          String?   @db.VarChar(5)
+  rank           Int?
+  is_pass        Boolean?
+  remarks        String?
+
+  test    Test    @relation(fields: [test_id], references: [id])
+  student Student @relation(fields: [student_id], references: [id])
+
+  @@index([test_id])
+  @@index([student_id])
+  @@unique([test_id, student_id])
+}
+
+model Announcement {
+  id              String    @id @default(uuid()) @db.Uuid
+  created_at      DateTime  @default(now()) @db.Timestamptz
+  updated_at      DateTime  @updatedAt @db.Timestamptz
+  deleted_at      DateTime? @db.Timestamptz
+  teacher_id      String    @db.Uuid
+  batch_id        String?   @db.Uuid
+  student_id      String?   @db.Uuid
+  created_by_id   String?   @db.Uuid
+  title           String    @db.VarChar(255)
+  message         String
+  is_broadcast    Boolean   @default(false)
+  send_whatsapp   Boolean   @default(false)
+  send_sms        Boolean   @default(false)
+  send_in_app     Boolean   @default(true)
+  published_at    DateTime? @db.Timestamptz
+
+  teacher     Teacher  @relation(fields: [teacher_id], references: [id])
+  batch       Batch?   @relation(fields: [batch_id], references: [id])
+  student     Student? @relation(fields: [student_id], references: [id])
+  created_by  Staff?   @relation(fields: [created_by_id], references: [id])
+
+  @@index([teacher_id, published_at])
+}
+
+model Holiday {
+  id          String    @id @default(uuid()) @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  updated_at  DateTime  @updatedAt @db.Timestamptz
+  deleted_at  DateTime? @db.Timestamptz
+  teacher_id  String    @db.Uuid
+  batch_id    String?   @db.Uuid
+  date        DateTime  @db.Date
+  title       String    @db.VarChar(255)
+
+  teacher Teacher @relation(fields: [teacher_id], references: [id])
+  batch   Batch?  @relation(fields: [batch_id], references: [id])
+
+  @@index([teacher_id, date])
+  @@index([batch_id, date])
+}
