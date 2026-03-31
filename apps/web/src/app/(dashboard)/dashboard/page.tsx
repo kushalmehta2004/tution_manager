@@ -8,7 +8,7 @@ import { fetchDashboardSummary, type DashboardSummary } from '../../../lib/api';
 const quickActions = [
   { label: 'Mark Attendance', href: '/attendance' },
   { label: 'Add Student', href: '/students' },
-  { label: 'Record Payment', href: '/dashboard' },
+  { label: 'Record Payment', href: '/fees' },
 ];
 
 function formatCurrencyFromPaise(value: number): string {
@@ -201,6 +201,23 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               </div>
             </article>
+          </section>
+
+          <section className="rounded-lg bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold">Fee Collection Progress ({summary.feeProgress.month})</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Collected {formatCurrencyFromPaise(summary.feeProgress.collectedThisMonth)} of{' '}
+              {formatCurrencyFromPaise(summary.feeProgress.expectedThisMonth)} expected this month.
+            </p>
+            <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full rounded-full bg-emerald-600"
+                style={{ width: `${summary.feeProgress.progressPercent}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs font-medium text-emerald-700">
+              {summary.feeProgress.progressPercent}% achieved
+            </p>
           </section>
         </>
       ) : null}

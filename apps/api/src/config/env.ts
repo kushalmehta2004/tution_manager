@@ -17,6 +17,16 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SUPABASE_STORAGE_BUCKET: z.string().min(1),
   PARENT_INVITE_BASE_URL: z.string().url().default('http://localhost:3000/parent/invite'),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+  REDIS_URL: z.string().min(1).optional(),
+  WATI_API_BASE_URL: z.string().url().optional(),
+  WATI_API_TOKEN: z.string().min(1).optional(),
+  WATI_TEMPLATE_NAME: z.string().min(1).optional(),
+  FEE_REMINDER_CRON: z.string().default('0 9 * * *'),
+  FEE_REMINDER_DEFAULT_TEMPLATE: z
+    .string()
+    .default('Reminder: {{student_name}} has pending fee of INR {{amount}} due on {{due_date}}.'),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

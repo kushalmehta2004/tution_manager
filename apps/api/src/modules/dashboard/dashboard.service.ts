@@ -60,6 +60,8 @@ function attendancePercentFromStatuses(statuses: AttendanceStatus[]): number {
 
 export async function getDashboardSummary(teacherId: string) {
   const today = toDateOnly(new Date());
+  const monthStart = startOfMonth(today);
+  const nextMonthStart = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1));
   const sixMonthsAgo = startOfMonth(new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 5, 1)));
   const nextTwoWeeks = addDays(today, 14);
 
@@ -280,6 +282,39 @@ export async function getDashboardSummary(teacherId: string) {
     totalCollected,
   }));
 
+  const [expectedThisMonthAgg, collectedThisMonthAgg] = await Promise.all([
+    prisma.studentFee.aggregate({
+      where: {
+        teacher_id: teacherId,
+        deleted_at: null,
+        due_date: {
+          gte: monthStart,
+          lt: nextMonthStart,
+        },
+      },
+      _sum: {
+        amount_due: true,
+      },
+    }),
+    prisma.feePayment.aggregate({
+      where: {
+        teacher_id: teacherId,
+        deleted_at: null,
+        payment_date: {
+          gte: monthStart,
+          lt: nextMonthStart,
+        },
+      },
+      _sum: {
+        amount_paid: true,
+      },
+    }),
+  ]);
+
+  const expectedThisMonth = Number(expectedThisMonthAgg._sum.amount_due ?? 0n);
+  const collectedThisMonth = Number(collectedThisMonthAgg._sum.amount_paid ?? 0n);
+  const progressPercent = expectedThisMonth > 0 ? Math.min(Math.round((collectedThisMonth / expectedThisMonth) * 100), 100) : 0;
+
   const attendanceRows = await prisma.attendance.findMany({
     where: {
       deleted_at: null,
@@ -358,5 +393,11 @@ export async function getDashboardSummary(teacherId: string) {
     upcomingClasses: upcomingClassesCandidates,
     monthlyRevenue,
     lowAttendanceAlerts,
+    feeProgress: {
+      month: monthKey(monthStart),
+      expectedThisMonth,
+      collectedThisMonth,
+      progressPercent,
+    },
   };
 }

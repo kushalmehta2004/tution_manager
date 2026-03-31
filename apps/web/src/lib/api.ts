@@ -7,8 +7,47 @@ export type FeeStructureSummary = {
   id: string;
   name: string;
   amount: number;
-  frequency: string;
+  frequency: 'monthly' | 'quarterly' | 'half_yearly' | 'annual' | 'one_time' | 'per_class';
   subject: string | null;
+  description?: string | null;
+  is_active?: boolean;
+};
+
+export type StudentFeeListItem = {
+  id: string;
+  dueDate: string;
+  amountDue: number;
+  amountPaid: number;
+  amountPending: number;
+  discountAmount: number;
+  discountReason: string | null;
+  status: 'pending' | 'paid' | 'partial' | 'waived' | 'overdue';
+  periodLabel: string | null;
+  student: {
+    id: string;
+    name: string;
+    student_code: string;
+  };
+  feeStructure: {
+    id: string;
+    name: string;
+    frequency: string;
+    subject: string | null;
+  };
+};
+
+export type DailyCollectionSummary = {
+  date: string;
+  totalCollected: number;
+  paymentCount: number;
+  byMode: {
+    cash: number;
+    upi: number;
+    bank_transfer: number;
+    cheque: number;
+    razorpay: number;
+    other: number;
+  };
 };
 
 export type StudentListItem = {
@@ -103,6 +142,12 @@ export type DashboardSummary = {
     studentCode: string;
     attendancePercent: number;
   }>;
+  feeProgress: {
+    month: string;
+    expectedThisMonth: number;
+    collectedThisMonth: number;
+    progressPercent: number;
+  };
 };
 
 export type StudentAttendanceHeatmap = {
@@ -251,6 +296,231 @@ export async function fetchStudentAttendanceHeatmap(studentId: string, month?: s
 export async function fetchFeeStructures() {
   const result = await apiRequest<{ data: FeeStructureSummary[] }>('/fee-structures');
   return result.data;
+}
+
+export async function createFeeStructure(payload: {
+  name: string;
+  amount: number;
+  frequency: FeeStructureSummary['frequency'];
+  subject?: string;
+  description?: string;
+  isActive?: boolean;
+}) {
+  return apiRequest<FeeStructureSummary>('/fee-structures', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateFeeStructure(
+  feeStructureId: string,
+  payload: Partial<{
+    name: string;
+    amount: number;
+    frequency: FeeStructureSummary['frequency'];
+    subject: string;
+    description: string;
+    isActive: boolean;
+  }>,
+) {
+  return apiRequest<FeeStructureSummary>(`/fee-structures/${feeStructureId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchStudentFees(params?: {
+  page?: number;
+  pageSize?: number;
+  status?: 'pending' | 'paid' | 'partial' | 'waived' | 'overdue';
+  search?: string;
+}) {
+  const query = new URLSearchParams();
+
+  if (params?.page) {
+    query.set('page', String(params.page));
+  }
+
+  if (params?.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
+
+  if (params?.status) {
+    query.set('status', params.status);
+  }
+
+  if (params?.search) {
+    query.set('search', params.search);
+  }
+
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<{
+    data: StudentFeeListItem[];
+    pagination: { page: number; pageSize: number; total: number; totalPages: number };
+  }>(`/fees/student-fees${suffix}`);
+}
+
+export async function recordFeePayment(payload: {
+  studentFeeId: string;
+  amountPaid: number;
+  paymentDate?: string;
+  paymentMode: 'cash' | 'upi' | 'bank_transfer' | 'cheque' | 'razorpay' | 'other';
+  referenceNumber?: string;
+  notes?: string;
+}) {
+  return apiRequest<{
+    payment: {
+      id: string;
+      amountPaid: number;
+      paymentDate: string;
+      paymentMode: string;
+      referenceNumber: string | null;
+      receiptNumber: string | null;
+      receiptUrl: string | null;
+    };
+    studentFee: {
+      id: string;
+      status: string;
+      amountDue: number;
+      amountPaid: number;
+      amountPending: number;
+    };
+  }>('/fees/payments', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchDailyCollectionSummary(date?: string) {
+  const query = new URLSearchParams();
+
+  if (date) {
+    query.set('date', date);
+  }
+
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<DailyCollectionSummary>(`/fees/summary/daily${suffix}`);
+}
+
+export async function sendFeeReminder(payload: {
+  studentFeeId: string;
+  channel?: 'whatsapp';
+  messageTemplate?: string;
+}) {
+  return apiRequest('/fees/reminders/send', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchMonthlyCollectionReport(month?: string) {
+  const query = new URLSearchParams();
+  if (month) {
+    query.set('month', month);
+  }
+
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<{
+    month: string;
+    expectedTotal: number;
+    collectedTotal: number;
+    pendingTotal: number;
+    byMode: DailyCollectionSummary['byMode'];
+  }>(`/fees/reports/monthly${suffix}`);
+}
+
+export async function fetchOutstandingFeesReport(asOfDate?: string) {
+  const query = new URLSearchParams();
+  if (asOfDate) {
+    query.set('asOfDate', asOfDate);
+  }
+
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<{
+    asOfDate: string;
+    summary: {
+      totalOutstanding: number;
+      count: number;
+      ageing: Record<'0-30' | '31-60' | '61-90' | '90+', number>;
+    };
+    rows: Array<{
+      studentFeeId: string;
+      studentId: string;
+      studentName: string;
+      studentCode: string;
+      dueDate: string;
+      amountPending: number;
+      overdueDays: number;
+      bucket: '0-30' | '31-60' | '61-90' | '90+';
+    }>;
+  }>(`/fees/reports/outstanding${suffix}`);
+}
+
+export async function fetchStudentLedger(studentId: string) {
+  const query = new URLSearchParams({ studentId });
+  return apiRequest<{
+    student: { id: string; name: string; student_code: string };
+    summary: { totalDue: number; totalPaid: number; pending: number };
+    fees: Array<{ id: string; dueDate: string; amountDue: number; status: string; periodLabel: string | null }>;
+    payments: Array<{ id: string; amountPaid: number; paymentDate: string; paymentMode: string; receiptUrl: string | null }>;
+  }>(`/fees/reports/student-ledger?${query.toString()}`);
+}
+
+export async function fetchAnnualSummary(financialYear?: string) {
+  const query = new URLSearchParams();
+  if (financialYear) {
+    query.set('financialYear', financialYear);
+  }
+
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<{
+    financialYear: string;
+    totalCollected: number;
+    monthly: Array<{ month: string; total: number }>;
+  }>(`/fees/reports/annual${suffix}`);
+}
+
+export function getAnnualSummaryExportUrl(format: 'pdf' | 'excel', financialYear?: string) {
+  const query = new URLSearchParams();
+  if (financialYear) {
+    query.set('financialYear', financialYear);
+  }
+
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return `${API_BASE}/fees/reports/annual/export/${format}${suffix}`;
+}
+
+export async function downloadAnnualSummaryReport(
+  format: 'pdf' | 'excel',
+  financialYear?: string,
+): Promise<Blob> {
+  const token = getToken();
+  const url = getAnnualSummaryExportUrl(format, financialYear);
+
+  const response = await fetch(url, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    throw new Error(body.message ?? 'Report download failed');
+  }
+
+  return response.blob();
 }
 
 export async function enrollStudent(payload: Record<string, unknown>) {

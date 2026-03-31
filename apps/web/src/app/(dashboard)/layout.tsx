@@ -10,7 +10,7 @@ const navLinks = [
   { href: '/students', label: 'Students' },
   { href: '/batches', label: 'Batches' },
   { href: '/attendance', label: 'Attendance' },
-  { href: '/dashboard', label: 'Fees' },
+  { href: '/fees', label: 'Fees' },
   { href: '/dashboard', label: 'Tests' },
   { href: '/dashboard', label: 'Announcements' },
 ];

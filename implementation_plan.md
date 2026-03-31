@@ -10,9 +10,9 @@
 | Phase | Focus | Timeline |
 |-------|-------|----------|
 | 0 | ✅ Foundation — Project Setup & Auth (Completed) | Week 1 |
-| 1 | Core MVP — Students & Batches | Week 2–3 |
-| 2 | Daily Ops — Attendance System | Week 4 |
-| 3 | Revenue Engine — Fee Management | Week 5–6 |
+| 1 | ✅ Core MVP — Students & Batches | Week 2–3 |
+| 2 | ✅ Daily Ops — Attendance System | Week 4 |
+| 3 | ✅ Revenue Engine — Fee Management | Week 5–6 |
 | 4 | Value Add — Test & Performance Tracking | Week 7 |
 | 5 | Parent Engagement — Parent Portal (PWA) | Week 8 |
 | 6 | Growth Features — Communication & Staff | Week 9 |
@@ -69,7 +69,7 @@
 
 ---
 
-## Phase 1 — Core MVP: Student & Batch Management
+## Phase 1 — Core MVP: Student & Batch Management ✅ Completed
 **Duration:** Week 2–3  
 **Goal:** A teacher can log in, add students, create batches, and assign students to batches.
 
@@ -138,45 +138,46 @@
 
 ---
 
-## Phase 3 — Revenue Engine: Fee Management
+## Phase 3 — Revenue Engine: Fee Management ✅ Completed
 **Duration:** Week 5–6  
 **Goal:** The most important module. Nail this and retention is guaranteed.
+**Status:** Completed on March 31, 2026
 
 ### 3.1 Fee Structures — Module 5A
-- [ ] `GET /fee-structures`, `POST /fee-structures`, `PUT /fee-structures/:id`
-- [ ] Support all frequencies: `monthly`, `quarterly`, `half_yearly`, `annual`, `one_time`, `per_class`
-- [ ] Named structures: "Monthly Maths", "JEE Full Course", "Half-yearly Science"
-- [ ] Subject-wise fee (different fee per subject for same student)
-- [ ] Discount management: sibling discount, early-payment discount, need-based concession — stored as `discount_amount` + `discount_reason` on `student_fees`
+- [x] `GET /fee-structures`, `POST /fee-structures`, `PUT /fee-structures/:id`
+- [x] Support all frequencies: `monthly`, `quarterly`, `half_yearly`, `annual`, `one_time`, `per_class`
+- [x] Named structures: "Monthly Maths", "JEE Full Course", "Half-yearly Science"
+- [x] Subject-wise fee (different fee per subject for same student)
+- [x] Discount management: sibling discount, early-payment discount, need-based concession — stored as `discount_amount` + `discount_reason` on `student_fees`
 
 ### 3.2 Fee Collection — Module 5B
-- [ ] `POST /fee-payments` — record manual payment (cash, UPI, bank transfer, cheque)
-- [ ] `reference_number` field for UPI transaction ID / cheque number
-- [ ] Partial payment support — update `student_fees.status` to `partial`, track remaining balance
-- [ ] Auto-generate receipt PDF — include institute name, student name, amount, date, reference number
-- [ ] Receipt stored on Cloudflare R2; shareable WhatsApp link returned in API response
-- [ ] Daily collection summary — how much collected today, broken down by payment mode
-- [ ] Auto-update `student_fees.status` → `paid` when full amount received; `overdue` via cron job
+- [x] `POST /fee-payments` — record manual payment (cash, UPI, bank transfer, cheque)
+- [x] `reference_number` field for UPI transaction ID / cheque number
+- [x] Partial payment support — update `student_fees.status` to `partial`, track remaining balance
+- [x] Auto-generate receipt PDF — include institute name, student name, amount, date, reference number
+- [x] Receipt stored on Cloudflare R2; shareable WhatsApp link returned in API response
+- [x] Daily collection summary — how much collected today, broken down by payment mode
+- [x] Auto-update `student_fees.status` → `paid` when full amount received; `overdue` via cron job
 
 ### 3.3 WhatsApp Fee Reminders — Module 5C (Core Value Prop)
-- [ ] Integrate WATI (WhatsApp Business API) — `₹999/mo`, essential from launch
-- [ ] BullMQ job queue (backed by Upstash Redis) for async reminder sending
-- [ ] node-cron job: runs daily at 9 AM IST, enqueues reminders for:
+- [x] Integrate WATI (WhatsApp Business API) — `₹999/mo`, essential from launch
+- [x] BullMQ job queue (backed by Upstash Redis) for async reminder sending
+- [x] node-cron job: runs daily at 9 AM IST, enqueues reminders for:
   - 3 days before due date
   - On due date
   - 3 days after due date
   - Escalation to parent after 7 days overdue
-- [ ] Custom reminder message — teacher writes once, system sends (template variables: `{{student_name}}`, `{{amount}}`, `{{due_date}}`)
-- [ ] Track reminder status on `student_fees`: `reminder_count`, `last_reminder_at`
-- [ ] One-click manual reminder — teacher sends instant reminder from any overdue row
-- [ ] WATI delivery status webhook — update `sent → delivered → read` per reminder
+- [x] Custom reminder message — teacher writes once, system sends (template variables: `{{student_name}}`, `{{amount}}`, `{{due_date}}`)
+- [x] Track reminder status on `student_fees`: `reminder_count`, `last_reminder_at`
+- [x] One-click manual reminder — teacher sends instant reminder from any overdue row
+- [x] WATI delivery status webhook — update `sent → delivered → read` per reminder
 
 ### 3.4 Fee Reports — Module 5D
-- [ ] Monthly collection report: total collected, total pending, mode-wise breakdown
-- [ ] Student-wise ledger: full payment history per student (shareable with parent)
-- [ ] Outstanding fees report: all dues sorted by amount, with ageing buckets (30/60/90 days)
-- [ ] Annual fee summary for income tax (FY total income, exportable as PDF/Excel)
-- [ ] Dashboard fee card updated: progress bar (collected vs. total expected this month)
+- [x] Monthly collection report: total collected, total pending, mode-wise breakdown
+- [x] Student-wise ledger: full payment history per student (shareable with parent)
+- [x] Outstanding fees report: all dues sorted by amount, with ageing buckets (30/60/90 days)
+- [x] Annual fee summary for income tax (FY total income, exportable as PDF/Excel)
+- [x] Dashboard fee card updated: progress bar (collected vs. total expected this month)
 
 ---
 
